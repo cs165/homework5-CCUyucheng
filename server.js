@@ -6,7 +6,7 @@ const key = require('./privateSettings.json');
 
 // TODO(you): Change the value of this string to the spreadsheet id for your
 // GSA spreadsheet. See HW5 spec for more information.
-const SPREADSHEET_ID = '__YOUR__SPREADSHEET__ID__HERE__';
+const SPREADSHEET_ID = '1eSdWF9hpBcnLAVdjOKAURKnNp-z27g3henvrUh3vtKU';
 
 const app = express();
 const jsonParser = bodyParser.json();
@@ -20,8 +20,22 @@ async function onGet(req, res) {
   console.log(rows);
 
   // TODO(you): Finish onGet.
+  var re=[];
+  var key=rows[0][0],value=rows[0][1];
 
-  res.json( { status: 'unimplemented'} );
+  //console.log(cols);
+  for(let ptr of rows){
+    //console.log(ptr);
+    if(ptr[0]!==key && ptr[1]!==value){
+      let tmp={};
+      tmp[key]=ptr[0];
+      tmp[value]=ptr[1];
+      re.push(tmp);
+    }
+  }
+  //re.push({name:'A',email:'aa@AAA'});
+  console.log(re);
+  res.json(re);
 }
 app.get('/api', onGet);
 
@@ -29,8 +43,30 @@ async function onPost(req, res) {
   const messageBody = req.body;
 
   // TODO(you): Implement onPost.
+  console.log(messageBody);
+  const result = await sheet.getRows();
+  const rows = result.rows;
+  let cnt1=0,cnt2=0;
+  for(let p in messageBody) cnt1++;
+  if(cnt1!==rows[0].length){
+    res.json({status:'ERROR! WRONG NUMBER OF ARGUMENTS'});
+  }
 
-  res.json( { status: 'unimplemented'} );
+  var tmp=[],data=[];
+  for(let ptr of rows[0]) tmp[ptr]='';
+  for(let ptr in messageBody){
+    //console.log(ptr);
+    tmp[ptr]=messageBody[ptr];
+  }
+  //console.log(tmp);
+  for(let p in tmp){
+    data[cnt2]=tmp[p];
+    cnt2++;
+  }
+  console.log(data);
+  await sheet.appendRow(data);
+
+  res.json( { status: 'success'} );
 }
 app.post('/api', jsonParser, onPost);
 
@@ -50,8 +86,24 @@ async function onDelete(req, res) {
   const value  = req.params.value;
 
   // TODO(you): Implement onDelete.
+  console.log(column+'/'+value);
+  const result = await sheet.getRows();
+  const rows = result.rows;
 
-  res.json( { status: 'unimplemented'} );
+  var index;
+  for(index=0;index<rows[0].length;index++){
+    if(rows[0][index]===column) break;
+  }
+  if(index===rows[0].length) res.json({status:'ERROR! DOES NOT FIND 2th argument'});
+
+  for(let i=0;i<rows.length;i++){
+    if(rows[i][index]===value){
+      await sheet.deleteRow(i);
+      break;
+    }
+  }
+
+  res.json( { status: 'success'} );
 }
 app.delete('/api/:column/:value',  onDelete);
 
